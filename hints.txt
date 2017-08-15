@@ -1,0 +1,378 @@
+
+===============================================
+Building the AST and the Visitor Design Pattern
+===============================================
+
+--------------
+Outline:
+        What is an AST.
+        
+        How to build an AST while parsing.
+        
+        The AST data structure that will be provided for PA4 through PA7.
+        
+        What is a visitor design pattern.
+        
+        The AST visitor design pattern that will be provided for 
+        PA4 through PA7.
+        
+        The DotVisitor we are providing.
+
+---------------
+PA3
+
+        Now will build an Abstract Syntax Tree (AST) to represent the
+        program.
+        
+        Type checking will be implemented with a visitor.  Will need a 
+        line and position for each token in the AST.
+        
+        Byte and integer expression evaluation and code generation 
+        will now be implemented with a visitor.
+
+        Code generator visitor will handle control-flow constructs and
+        some of the boolean expressions.  Boolean expression evaluation
+        will be done on the AVR run-time stack.
+        
+        Code generator visitor will also generate code for Meggy.delay() and 
+        Meggy.checkButton().
+
+
+---------------------
+Abstract Syntax Trees
+
+    Example
+        -> show example Byte.java
+        [Will be showing how they get this visualization later]
+
+    General Concepts
+        - AST has a lot fewer nodes than a parse tree
+        
+        - AST is often language specific, for example the MeggyJava AST does
+        not have a ForStatement node and does have a node for each of the
+        built-in Meggy methods
+        
+        - An AST is useful in that the compiler can be
+        written as concrete visitors over the AST.
+        IOW will be doing multiple traversals of the AST for
+        type checking, building the symbol table, and code generation
+        
+    
+--------------------------------------
+The AST data structures being provided
+    
+    Node class hierarchy 
+        -each Node subclass is just representational
+        -each subclass constructor takes children in
+        AST as input (show in Eclipse)
+            PlusExp(leftExpNode, rightExpNode);
+            IfStatement( testExp, trueStmtList, falseStmtList);
+    
+    Nodes of interest for PA3
+        Integer and Byte Expression nodes
+            ByteCast
+            IntegerExp
+            MinusExp
+            MulExp
+            PlusExp
+            NegExp
+
+        Most Boolean Expressions
+            TrueExp
+            FalseExp
+            AndExp
+            EqualExp
+            NotExp
+            
+        Other expressions
+            ButtonExp
+            ColorExp
+    
+        Statements
+            BlockStatment
+            IfStatement
+            MeggyDelay
+            MeggySetPixel
+            WhileStatement
+        
+        Other Nodes
+            Token
+            Program
+            MainClass
+    
+
+Visitor Design Pattern
+----------------------
+Situation
+    - Want to perform some processing on all items in a data structure
+    - Will be adding many different ways to process items, different features
+    - Will not be changing the classes of the data structure itself much
+
+Possibilities
+    - For each functionality add a method  to all of the classes
+        - Each new functionality is spread over multiple files
+        - Sometimes can’t add methods to existing class hierarchy
+
+    - Use a large if-then-else statement in visit method
+        pro: keeps all the code for the feature in one place
+        con: can be costly and involve lots of casting
+
+    - Visitor design pattern
+ 
+ 
+-----------------------------------------------
+Provided Visitor Design Pattern Implementation
+
+    -> show them the class hierarchy        
+
+    -> show slide with excerpts from various parts of code defining and using
+      the visitor classes
+
+    -> Explain accept, visit, In, Out
+    
+    -> show DepthFirstVisitor
+
+        defaultOut
+    
+        defaultIn
+    
+-----------
+FAQ 
+
+    - How do we associate data to nodes? 
+        Use templated HashMaps that map nodes to information such as
+        AST node references.
+
+    - What if we want to do the same logic at each node in data structure?
+        -> Show DotVisitor.java, which just defines defaultCase, defaultIn, 
+           and defaultOut.
+
+
+----------------------------
+The Dot Visitor
+   
+    
+    -> show the reference compiler running and look at the generated dot file
+            % java -jar MJ.jar Infile.java
+    
+            // generating a png file of the graph
+            % dot -Tpng -otest.png test.dot
+            
+            // generating a pdf file of the graph
+            % dot -Tps2 -Gsize=64,64 -Gmargin=0 -otest.ps2 test.dot
+            % ps2pdf test.ps2 test.pdf
+            
+            // use dotty on PCs or GraphViz on Mac's to do interactive
+            // rendering
+            
+    
+    -> show how the DotVisitor is called in the reference compiler
+        ast.node.Node ast_root = (ast.node.Node)parser.parse().value;
+
+        java.io.PrintStream astout =
+            new java.io.PrintStream(
+                new java.io.FileOutputStream(filename + ".ast.dot"));
+          ast_root.accept(new DotVisitor(new PrintWriter(astout)));
+
+    -> show the DotVisitor implementation
+        It overrides the defaultIn and defaultOut methods and will be provided
+        for you.
+
+---------------
+Debugging Ideas
+
+        -System.out.println in parser actions
+        
+        -break points in visitor methods
+            -> actually do an example in Eclipse
+                -> step through the apply on the root and through all of the
+                applys on a subtree so that the functionality of the given 
+                analysis classes are introduced
+                
+                -> show how to set a break point
+
+        -more debugging ideas will be covered in recitation...
+            [overwrite defaultOut to print an error message if
+            the node has not been implemented yet.]
+            
+            
+------------------------
+
+PA3, (Types,) Control Flow, and Expressions
+===========================================
+
+    Generating AVR assembly code for ...
+    
+        - booleans
+
+        - the if statement
+        
+        - the while statement
+
+        - the negation operator !
+        
+        - short-circuited &&
+        
+        - the equality operator ==
+
+        - BUTTON_LITERAL 
+                
+        - Meggy.checkButton
+    
+        - Meggy.delay
+
+    
+    using a visitor design pattern.
+    
+
+----------------------------
+Big Picture
+    This reviews of what was covered last Tuesday.
+
+
+What have we done in PA3?
+   SYNTAX DIRECTED CODE GENERATION
+   Parser actions gather info, print (AVR) instructions, and return RESULT
+   RESULT associated with a nonterminal  E:r1  "+" E:r1, now you can do 
+   something with r1 and r2.
+   Expression were evaluated ar compile time, WHY COULD WE DO THAT?
+      Why can we not do this in general? Even without variables, what
+      creates a boolean result at run time? (Check button)
+
+What are we going to do in PA4?
+   GENERATE AN AST INSTEAD OF DIRECTLY GENERATING CODE.
+   Why is that a good idea?  What can we now do better?
+   We can walk over this AST multiple times and perform different functions.
+    eg
+       Type check, generate code, Create symbol table
+
+Walking over the AST is done using the Visitor pattern. In this
+pattern each node of the AST has an accept (sometimes called apply)
+method, that calls an appropriate visitor method. In our recitation
+Example the plusExp.accept called visitPlusExp.
+
+
+In general an AST XYZ node calls the visitXYZ method of the visitor,
+that the root node was instantiated with.
+
+
+Why is the inheritance hierarchy in the visitor USEFUL?? Why do we structure
+it this way?
+    reuse, only override small set of methods.
+
+
+A visitXYZ(node) method in a DepthFirstVisitor usually does the following:
+
+   inXYZ(node)
+   for child c of node in left to right order
+     accept(c);
+   outXYZ(node)
+  
+Ie, inXYZ is called when the node is first encountered in the DFLR walk,
+and outXYZ is called when the node is left behind in the DFLR walk. This
+is often suffucient for code generation purposes (+,-,*,setPixel), but 
+not always:  (if,  while, &&).
+
+***
+CODE STRUCTURE
+    
+In driver, first call the parser to get an AST:
+    
+        mj_ast_parser parser = new mj_ast_parser(lexer);
+        ast.node.Node ast_root = (ast.node.Node)parser.parse().value;
+
+    Next create a dot file for the AST for debugging purposes:
+    
+        java.io.PrintStream astout =
+            new java.io.PrintStream(
+                new java.io.FileOutputStream(filename + ".ast.dot"));
+        ast_root.accept(new DotVisitor(new PrintWriter(astout)));
+        System.out.println("Printing AST to " + filename + ".ast.dot");
+
+    Finally, create a Type Checker and an AVRgenVisitor instance and have 
+    these visit the AST, e.g.: 
+
+        java.io.PrintStream avrsout =
+              new java.io.PrintStream(
+                new java.io.FileOutputStream(filename + ".s"));
+        ast_root.accept(new AVRgenVisitor(new PrintWriter(avrsout)));
+        System.out.println("Printing Atmel assembly to " + filename + ".s");
+            
+    
+    Checktypes and AVRgenVisitor inherit from DepthFirstVisitor.  
+
+    The first thing to do is move all of the code generation
+    for the main PROLOGUE and EPILOGUE into the AVRgenVisitor.
+
+    Ideas for where the prologue and epilogue should be generated?
+
+
+        The prologue and epilogue can be generated in the driver
+        before and after the AVRgenVisitor visits the AST or in 
+        the inMainClass and outMainClass.
+    
+    Where does the code for  Meggy.setPixel() go?
+
+    The Meggy.setPixel() code generation should occur in outMeggySetPixel().
+
+----------------------------------------------
+
+List of AVR instructions that MJSIM can handle
+that are relevant to PA4
+
+    pop    r24
+    call   _Z6DrawPxhhh
+    call   _Z12DisplaySlatev
+
+
+    ldi    r22, 1
+    push   r22
+
+    call    _Z16CheckButtonsDownv
+    lds    r24, Button_A
+
+
+    ldi    r24,lo8(0)
+    ldi    r25,hi8(0)
+
+    call   _Z8delay_msj
+
+    jmp    MJ_L0
+
+    tst    r24
+
+    
+    The conditional branches can only go so far in the code, and the
+    code generated by the reference compiler exceeds that limit.
+    Therefore we have to use jmp sometimes.  Notice how I replace a
+    breq with a brne followed by a jmp to handle this issue.
+
+    cp     r24, r25
+    #WANT breq MJ_L6
+    brne   MJ_L7
+    jmp    MJ_L6
+    MJ_L7:
+    ...
+    MJ_L6:
+
+--------------------------------------------------------
+
+The parser generates code for evaluating expressions on the avr
+run-time stack.
+
+    The main idea is that the Code that evaluates any 
+    expression should always expect its operands and leave 
+    its result on the top of the run-time stack.
+   
+    The DFLR visitor can use the outXYZ method to generate
+    code for an operator, because code for the children has 
+    just been generated and has left the result on the RTS
+
+
+
+ 
+------------------------
+wim@cs.colostate.edu,     3/13/12
+mstrout@cs.colostate.edu, 2/28/11, 2/21/13
+
+
